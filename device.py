@@ -57,9 +57,14 @@ class Webthing(Device, Listener):
             uri = uri[:-1]
         self.uri = uri
         self.__session = Session()
-        self.__is_running = True
+        self.__is_running = False
         self.event_consumer = EventConsumer(name, self.uri, self).start()
-        Thread(target=self.__load_all_properties_loop, daemon=True).start()
+
+    def start(self):
+        if not self.__is_running:
+            self.__is_running = True
+            self.__load_all_properties()
+            Thread(target=self.__load_all_properties_loop, daemon=True).start()
 
     def close(self):
         self.__is_running = False
@@ -102,20 +107,23 @@ class Webthing(Device, Listener):
             logging.warning("error occurred calling " + property_uri + " " + str(e))
             self.__renew_session()
 
+    def __load_all_properties(self):
+        property_uri = self.uri + "/properties"
+        try:
+            resp = self.__session.get(property_uri, timeout=10)
+            if resp.status_code == 200:
+                props = resp.json()
+                self._properties.update(props)
+                self._notify_listener(props)
+            else:
+                logging.warning("got error response calling " + property_uri + " " + str(resp.status_code) + " " + resp.text)
+        except Exception as e:
+            logging.warning("error occurred calling " + property_uri + " " + str(e))
+            self.__renew_session()
+
     def __load_all_properties_loop(self):
         while self.__is_running:
-            property_uri = self.uri + "/properties"
-            try:
-                resp = self.__session.get(property_uri, timeout=10)
-                if resp.status_code == 200:
-                    props = resp.json()
-                    self._properties.update(props)
-                    self._notify_listener(props)
-                else:
-                    logging.warning("got error response calling " + property_uri + " " + str(resp.status_code) + " " + resp.text)
-            except Exception as e:
-                logging.warning("error occurred calling " + property_uri + " " + str(e))
-                self.__renew_session()
+            self.__load_all_properties()
             sleep(13 * 60)
 
     def __renew_session(self):
@@ -201,6 +209,7 @@ class DeviceManager(DeviceRegistry, FileSystemEventHandler):
                 with open(webthing_file) as file:
                     for device_name, config in yaml.safe_load(file).items():
                         device = Webthing(device_name, config['url'])
+                        device.start()
                         refreshed_device_map[device.name] = device
                 old_devices = self.__device_map.values()
                 self.__device_map = refreshed_device_map
