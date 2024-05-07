@@ -65,6 +65,7 @@ class Webthing(Device, Listener):
             self.__is_running = True
             self.__load_all_properties()
             Thread(target=self.__load_all_properties_loop, daemon=True).start()
+            logging.info("device " + self.name + " started")
 
     def close(self):
         self.__is_running = False
