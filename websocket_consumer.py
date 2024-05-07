@@ -69,4 +69,4 @@ class EventConsumer:
                 ws.close()
             except Exception as e:
                 pass
-            sleep(3)
+            sleep(7)
