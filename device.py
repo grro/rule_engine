@@ -172,7 +172,10 @@ class DeviceManager(DeviceRegistry, FileSystemEventHandler):
         return list(self.__device_map.values())
 
     def device(self, name: str) -> Optional[Device]:
-        return self.__device_map.get(name, None)
+        device = self.__device_map.get(name, None)
+        if device is None:
+            logging.warning("device " + name + " not available. Returning None (available devices: " + ", " .join([device.name for device in self.devices]) + ")")
+        return device
 
     def on_moved(self, event):
         if event.dest_path.endswith(self.FILENAME):
