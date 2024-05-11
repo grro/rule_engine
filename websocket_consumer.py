@@ -64,7 +64,8 @@ class EventConsumer:
                     msg = ws.recv()
                     self.on_message(msg)
             except Exception as e:
-                logging.warning(self.name + " error occurred running websocket client (" + self.__uri + ") " + str(e))
+                if self.__is_running:
+                    logging.warning(self.name + " error occurred running websocket client (" + self.__uri + ") " + str(e))
             try:
                 ws.close()
             except Exception as e:
