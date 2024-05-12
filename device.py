@@ -101,11 +101,11 @@ class Webthing(Device, Listener):
         try:
             data = json.dumps({name: value})
             resp = self.__session.put(property_uri, data=data, timeout=10)
-            if resp == 200:
+            if resp.status_code == 200:
                 self._properties[name] = value
                 logging.info(self.uri + " updated: " + name + "=" + str(value))
             else:
-                logging.info("calling " + self.uri + " to update " + name + " with " + str(value) + "failed. Got " + str(resp.status_code) + " " + resp.text)
+                logging.info("calling " + self.uri + " to update " + name + " with " + str(value) + " failed. Got " + str(resp.status_code) + " " + resp.text)
             self._notify_listener({name: value})
         except Exception as e:
             logging.warning("error occurred calling " + property_uri + " " + str(e))
