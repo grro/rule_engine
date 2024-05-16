@@ -89,14 +89,14 @@ class Webthing(Device, Listener):
                 resp = self.__session.get(property_uri, timeout=10)
                 data = resp.json()
                 value = data[prop_name]
+                if value is None:
+                    logging.warning("calling " + property_uri + " returns " + json.dumps(data, indent=2))
                 self._properties[prop_name] = value
                 self._notify_listener({prop_name: value})
             except Exception as e:
                 logging.warning(self.name + " error occurred calling " + property_uri + " " + str(e))
                 self.__renew_session()
         if value is None:
-            if dlt is None:
-                logging.warning(self.name + " returning null value for " + prop_name + " ")
             return dlt
         else:
             return value
