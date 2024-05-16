@@ -53,7 +53,6 @@ class RuleEngine():
         if filename.endswith(".py"):
             try:
                 modulename = self.__filename_to_modulename(filename)
-                msg = None
                 # reload?
                 if modulename in sys.modules:
                     [processor.remove_rules(modulename) for processor in self.__processors]
@@ -61,7 +60,7 @@ class RuleEngine():
                     msg = "file '" + filename + "' reloaded"
                 else:
                     importlib.import_module(modulename)
-                    msg = "file '" + filename + "' loaded for the first time"
+                    msg = "file '" + filename + "' loaded"
                 function_annotations = parse_function_annotations(modulename)
                 if len(function_annotations) > 0:
                     [processor.on_annotations(function_annotations) for processor in self.__processors]

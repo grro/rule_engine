@@ -81,34 +81,39 @@ class Webthing(Device, Listener):
         self._notify_listener(props_changed)
 
 
-    def get_property(self, name: str):
-        value = super().get_property(name)
+    def get_property(self, prop_name: str, dlt = None):
+        value = super().get_property(prop_name)
         if value is None:
-            property_uri = self.uri + "/properties/" + name
+            property_uri = self.uri + "/properties/" + prop_name
             try:
                 resp = self.__session.get(property_uri, timeout=10)
                 data = resp.json()
-                value = data[name]
-                self._properties[name] = value
-                self._notify_listener({name: value})
+                value = data[prop_name]
+                self._properties[prop_name] = value
+                self._notify_listener({prop_name: value})
             except Exception as e:
-                logging.warning("error occurred calling " + property_uri + " " + str(e))
+                logging.warning(self.name + " error occurred calling " + property_uri + " " + str(e))
                 self.__renew_session()
-        return value
+        if value is None:
+            if dlt is None:
+                logging.warning(self.name + " returning null value for " + prop_name + " ")
+            return dlt
+        else:
+            return value
 
-    def set_property(self, name: str, value: Any):
-        property_uri = self.uri + "/properties/" + name
+    def set_property(self, prop_name: str, value: Any):
+        property_uri = self.uri + "/properties/" + prop_name
         try:
-            data = json.dumps({name: value})
+            data = json.dumps({prop_name: value})
             resp = self.__session.put(property_uri, data=data, timeout=10)
             if resp.status_code == 200:
-                self._properties[name] = value
-                logging.info(self.uri + " updated: " + name + "=" + str(value))
+                self._properties[prop_name] = value
+                logging.info(self.uri + " updated: " + prop_name + "=" + str(value))
             else:
-                logging.info("calling " + self.uri + " to update " + name + " with " + str(value) + " failed. Got " + str(resp.status_code) + " " + resp.text)
-            self._notify_listener({name: value})
+                logging.info(self.name + " calling " + self.uri + " to update " + prop_name + " with " + str(value) + " failed. Got " + str(resp.status_code) + " " + resp.text)
+            self._notify_listener({prop_name: value})
         except Exception as e:
-            logging.warning("error occurred calling " + property_uri + " " + str(e))
+            logging.warning(self.name + " error occurred calling " + property_uri + " " + str(e))
             self.__renew_session()
 
     def __load_all_properties(self):
@@ -120,9 +125,9 @@ class Webthing(Device, Listener):
                 self._properties.update(props)
                 self._notify_listener(props)
             else:
-                logging.warning("got error response calling " + property_uri + " " + str(resp.status_code) + " " + resp.text)
+                logging.warning(self.name + " got error response calling " + property_uri + " " + str(resp.status_code) + " " + resp.text)
         except Exception as e:
-            logging.warning("error occurred calling " + property_uri + " " + str(e))
+            logging.warning(self.name + " error occurred calling " + property_uri + " " + str(e))
             self.__renew_session()
 
     def __load_all_properties_loop(self):
@@ -131,7 +136,7 @@ class Webthing(Device, Listener):
             sleep(13 * 60)
 
     def __renew_session(self):
-        logging.info("renew session")
+        logging.info(self.name + " renew session")
         try:
             self.__session.close()
         except Exception as e:
