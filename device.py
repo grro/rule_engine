@@ -243,7 +243,7 @@ class DeviceManager(DeviceRegistry, FileSystemEventHandler):
                 old_devices = self.__device_map.values()
                 self.__device_map = refreshed_device_map
                 [device.close() for device in old_devices]
-                logging.info("devices (re)loaded: " + ", ".join([device.name for device in self.devices]))
+                logging.info("devices (re)loaded: " + ", ".join(sorted([device.name for device in self.devices])))
                 self.__change_listener()
             except Exception as e:
                 logging.warning("error occurred refreshing config " + str(e))
