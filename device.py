@@ -63,12 +63,18 @@ class Webthing(Device, Listener):
 
     @staticmethod
     def create(name: str, uri: str) -> List:
-        resp = requests.get(uri)
-        data = resp.json()
-        if type(data) is list:
-            return [Webthing(config['title'], config['base']) for config in data]
-        else:
-            return [Webthing(name, uri)]
+        try:
+            resp = requests.get(uri)
+            resp.raise_for_status()
+            data = resp.json()
+            if type(data) is list:
+                return [Webthing(config['title'], config['base']) for config in data]
+            else:
+                return [Webthing(name, uri)]
+        except Exception as e:
+            logging.warning(name + " error occurred calling " + uri + " " + str(e))
+            return []
+
 
     def start(self):
         if not self.__is_running:
@@ -190,7 +196,6 @@ class DeviceManager(DeviceRegistry, FileSystemEventHandler):
         self.observer.schedule(self, self.dir, recursive=False)
         self.observer.start()
         self.__reload_config()
-        logging.info("device manager started. Available devices: " + ",".join([device.name for device in self.devices]))
 
     def close(self):
         self.__is_running = False
@@ -238,6 +243,7 @@ class DeviceManager(DeviceRegistry, FileSystemEventHandler):
                 old_devices = self.__device_map.values()
                 self.__device_map = refreshed_device_map
                 [device.close() for device in old_devices]
+                logging.info("devices (re)loaded: " + ", ".join([device.name for device in self.devices]))
                 self.__change_listener()
             except Exception as e:
                 logging.warning("error occurred refreshing config " + str(e))
