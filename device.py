@@ -170,6 +170,9 @@ class DeviceRegistry(ABC):
     def device(self, name: str) -> Optional[Device]:
         pass
 
+    @abstractmethod
+    def devices(self) -> List[Device]:
+        pass
 
 
 class DeviceManager(DeviceRegistry, FileSystemEventHandler):
@@ -187,6 +190,7 @@ class DeviceManager(DeviceRegistry, FileSystemEventHandler):
         self.observer.schedule(self, self.dir, recursive=False)
         self.observer.start()
         self.__reload_config()
+        logging.info("device manager started. Available devices: " + ",".join([device.name for device in self.devices]))
 
     def close(self):
         self.__is_running = False
