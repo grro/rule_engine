@@ -25,14 +25,14 @@ class Processor(ABC):
         pass
 
     def add_rule(self, rule: Rule):
-        logging.info(' * register ' + rule.module + '.py#' + rule.function_name + '(...) on @when("' + rule.trigger_expression + '")')
+        logging.debug(' * register ' + rule.module + '.py#' + rule.function_name + '(...) on @when("' + rule.trigger_expression + '")')
         self.rules.add(rule)
         self.on_add_rule(rule)
 
     def remove_rules(self, module: str):
         rules_of_module = {rule for rule in self.rules if rule.module == module}
         for rule in rules_of_module:
-            logging.info(' * unregister ' + rule.module + '.py#' + rule.function_name + '(...) on @when("' + rule.trigger_expression + '")')
+            logging.debug(' * unregister ' + rule.module + '.py#' + rule.function_name + '(...) on @when("' + rule.trigger_expression + '")')
         self.rules = self.rules - rules_of_module
         self.on_remove_rules(module)
 
