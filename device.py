@@ -1,4 +1,5 @@
 import logging
+import requests
 import json
 from os.path import join
 from watchdog.observers import Observer
@@ -59,6 +60,15 @@ class Webthing(Device, Listener):
         self.__session = Session()
         self.__is_running = False
         self.event_consumer = EventConsumer(name, self.uri, self).start()
+
+    @staticmethod
+    def create(name: str, uri: str) -> List:
+        resp = requests.get(uri)
+        data = resp.json()
+        if type(data) is list:
+            return [Webthing(config['title'], config['base']) for config in data]
+        else:
+            return [Webthing(name, uri)]
 
     def start(self):
         if not self.__is_running:
@@ -215,11 +225,12 @@ class DeviceManager(DeviceRegistry, FileSystemEventHandler):
             try:
                 refreshed_device_map = {}
                 webthing_file = join(self.dir, self.FILENAME)
+                logging.info("reading " + webthing_file)
                 with open(webthing_file) as file:
                     for device_name, config in yaml.safe_load(file).items():
-                        device = Webthing(device_name, config['url'])
-                        device.start()
-                        refreshed_device_map[device.name] = device
+                        for device in Webthing.create(device_name, config['url']):
+                            device.start()
+                            refreshed_device_map[device.name] = device
                 old_devices = self.__device_map.values()
                 self.__device_map = refreshed_device_map
                 [device.close() for device in old_devices]
