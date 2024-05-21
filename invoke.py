@@ -50,7 +50,7 @@ class InvokerImpl(Invoker):
 
     def invoke(self, device_registry: DeviceRegistry, initiator: str):
         try:
-            logging.info("calling " + str(self._func.__name__) + " (initiator: " + initiator + ")")
+            logging.debug("calling " + str(self._func.__name__) + " (initiator: " + initiator + ")")
             if self.__type == self.TYPE_SINGLE_PARAM_ITEMREGISTRY:
                 self._func(device_registry)
             else:
