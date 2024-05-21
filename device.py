@@ -229,6 +229,11 @@ class DeviceManager(DeviceRegistry, FileSystemEventHandler):
         if event.src_path.endswith(self.FILENAME):
             self.__reload_config()
 
+    def __set_device_map(self, new_device_map: Dict[str, Device]):
+        old_device_map = self.__device_map
+        self.__device_map = new_device_map
+        [device.close() for device in old_device_map.values()]
+
     def __reload_config(self):
         if self.__is_running:
             try:
@@ -240,8 +245,7 @@ class DeviceManager(DeviceRegistry, FileSystemEventHandler):
                         for device in Webthing.create(device_name, config['url']):
                             device.start()
                             new_device_map[device.name] = device
-                [device.close() for device in self.__device_map.values()]   # close old entries
-                self.__device_map = new_device_map  # set new entries
+                self.__set_device_map(new_device_map)
                 logging.info("devices (re)loaded: " + ", ".join(sorted([device.name for device in self.devices])))
             except Exception as e:
                 logging.warning("error occurred refreshing config " + str(e))
