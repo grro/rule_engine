@@ -199,6 +199,7 @@ class DeviceManager(DeviceRegistry, FileSystemEventHandler):
         self.observer.schedule(self, self.dir, recursive=False)
         self.observer.start()
         self.__reload_config()
+        Thread(target=self.__reload_config_loop, daemon=True).start()
 
     def close(self):
         self.__is_running = False
@@ -255,9 +256,18 @@ class DeviceManager(DeviceRegistry, FileSystemEventHandler):
                             device.start()
                             new_device_map[device.name] = device
                 self.__set_device_map(new_device_map)
-                logging.info("devices (re)loaded: " + ", ".join(sorted([device.name for device in self.devices])))
+                logging.info("devices available: " + ", ".join(sorted([device.name for device in self.devices])))
             except Exception as e:
                 logging.warning("error occurred refreshing config " + str(e))
             self.__change_listener()
         else:
             [device.close() for device in self.__device_map.values()]
+
+    def __reload_config_loop(self):
+        sleep(20)
+        while self.__is_running:
+            try:
+                self.__reload_config()
+            except Exception as e:
+                logging.warning("error occurred reloading config " + str(e))
+            sleep(13*60*60)

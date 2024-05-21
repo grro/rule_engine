@@ -48,7 +48,6 @@ class RuleEngine():
             while self.__is_running:
                 sleep(1)
 
-
     def __load_module(self, filename: str):
         if filename.endswith(".py"):
             try:
