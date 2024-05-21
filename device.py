@@ -99,9 +99,9 @@ class Webthing(Device, Listener):
             self._properties[name] = value
         self._notify_listener(props_changed)
 
-    def get_property(self, prop_name: str, dlt = None):
+    def get_property(self, prop_name: str, dlt = None, force_loading: bool = False):
         value = super().get_property(prop_name)
-        if value is None:
+        if force_loading or (value is None):
             property_uri = self.uri + "/properties/" + prop_name
             try:
                 resp = self.__session.get(property_uri, timeout=10)
@@ -119,8 +119,8 @@ class Webthing(Device, Listener):
         else:
             return value
 
-    def set_property(self, prop_name: str, value: Any, reason: str = None, force: bool= False):
-        if force or (self.get_property(prop_name) != value):
+    def set_property(self, prop_name: str, value: Any, reason: str = None):
+        if self.get_property(prop_name, force_loading=True) != value:
             property_uri = self.uri + "/properties/" + prop_name
             try:
                 data = json.dumps({prop_name: value})
