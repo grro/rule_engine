@@ -232,6 +232,12 @@ class DeviceManager(DeviceRegistry, FileSystemEventHandler):
     def __set_device_map(self, new_device_map: Dict[str, Device]):
         old_device_map = self.__device_map
         self.__device_map = new_device_map
+        added = [new_devices for new_devices in new_device_map.values() if new_devices not in old_device_map.values()]
+        if len(added) > 0:
+            logging.info("new devices: " + ", " .join(sorted([device.name for device in added])))
+        removed = [removed_devices for removed_devices in old_device_map.values() if removed_devices not in new_device_map.values()]
+        if len(removed) > 0:
+            logging.info("removed devices: " + ", " .join(sorted([device.name for device in removed])))
         [device.close() for device in old_device_map.values()]
 
     def __reload_config(self):
