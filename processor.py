@@ -38,7 +38,7 @@ class Processor(ABC):
 
     def invoke_rule(self, rule: Rule):
         try:
-            rule.invoke(self._device_registry)
+            rule.invoke(self._device_registry, self.name)
         except Exception as e:
             logging.warning("Error occurred by executing rule " + rule.function_name, e)
 

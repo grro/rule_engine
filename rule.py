@@ -13,10 +13,10 @@ class Rule:
         self.last_executed = None
         self.last_failed = None
 
-    def invoke(self, device_registry: DeviceRegistry):
+    def invoke(self, device_registry: DeviceRegistry, initiator: str):
         try:
             logging.debug('executing ' + self.module + '.py#' + self.function_name + '(...) on @when("' + self.trigger_expression + '")')
-            self.__invoker.invoke(device_registry)
+            self.__invoker.invoke(device_registry, initiator)
             self.last_executed = datetime.now()
         except Exception as e:
             logging.warning("Error occurred by executing rule " + self.function_name, e)

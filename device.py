@@ -116,20 +116,21 @@ class Webthing(Device, Listener):
         else:
             return value
 
-    def set_property(self, prop_name: str, value: Any, reason: str = None):
-        property_uri = self.uri + "/properties/" + prop_name
-        try:
-            data = json.dumps({prop_name: value})
-            resp = self.__session.put(property_uri, data=data, timeout=10)
-            if resp.status_code == 200:
-                self._properties[prop_name] = value
-                logging.info(self.uri + " updated: " + prop_name + "=" + str(value) + ("" if reason is None else " (" + reason + ")"))
-            else:
-                logging.info(self.name + " calling " + self.uri + " to update " + prop_name + " with " + str(value) + " failed. Got " + str(resp.status_code) + " " + resp.text)
-            self._notify_listener({prop_name: value})
-        except Exception as e:
-            logging.warning(self.name + " error occurred calling " + property_uri + " " + str(e))
-            self.__renew_session()
+    def set_property(self, prop_name: str, value: Any, reason: str = None, force: bool= False):
+        if force or (self.get_property(prop_name) != value):
+            property_uri = self.uri + "/properties/" + prop_name
+            try:
+                data = json.dumps({prop_name: value})
+                resp = self.__session.put(property_uri, data=data, timeout=10)
+                if resp.status_code == 200:
+                    self._properties[prop_name] = value
+                    logging.info(self.uri + " updated: " + prop_name + "=" + str(value) + ("" if reason is None else " (" + reason + ")"))
+                else:
+                    logging.info(self.name + " calling " + self.uri + " to update " + prop_name + " with " + str(value) + " failed. Got " + str(resp.status_code) + " " + resp.text)
+                self._notify_listener({prop_name: value})
+            except Exception as e:
+                logging.warning(self.name + " error occurred calling " + property_uri + " " + str(e))
+                self.__renew_session()
 
     def __load_all_properties(self):
         property_uri = self.uri + "/properties"

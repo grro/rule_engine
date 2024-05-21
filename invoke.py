@@ -12,7 +12,7 @@ from device import DeviceRegistry
 class Invoker(ABC):
 
     @abstractmethod
-    def invoke(self, device_registry: DeviceRegistry):
+    def invoke(self, device_registry: DeviceRegistry, initiator: str):
         pass
 
 
@@ -48,8 +48,9 @@ class InvokerImpl(Invoker):
     def __str__(self):
         return self.fullname
 
-    def invoke(self, device_registry: DeviceRegistry):
+    def invoke(self, device_registry: DeviceRegistry, initiator: str):
         try:
+            logging.info("calling " + str(self._func.__name__) + " (initiator: " + initiator + ")")
             if self.__type == self.TYPE_SINGLE_PARAM_ITEMREGISTRY:
                 self._func(device_registry)
             else:
@@ -71,18 +72,19 @@ class AsyncInvokerWrapper(Invoker):
         self.invoker = invoker
         self.invoker_manager = invoker_manager
 
-    def invoke(self, device_registry: DeviceRegistry):
-        self.invoker_manager.invoke_async(Invocation(self.invoker, device_registry))
+    def invoke(self, device_registry: DeviceRegistry, initiator: str):
+        self.invoker_manager.invoke_async(Invocation(self.invoker, device_registry, initiator))
 
 
 class Invocation:
 
-    def __init__(self, invoker: Invoker, device_registry : DeviceRegistry):
+    def __init__(self, invoker: Invoker, device_registry : DeviceRegistry, initiator: str):
         self.invoker = invoker
+        self.initiator = initiator
         self.device_registry = device_registry
 
     def invoke(self):
-        self.invoker.invoke(self.device_registry)
+        self.invoker.invoke(self.device_registry, self.initiator)
 
     def __str__(self):
         return str(self.invoker)
