@@ -54,7 +54,7 @@ class Device(ABC):
 
 
     @abstractmethod
-    def set_property(self, name: str, value: Any):
+    def set_property(self, name: str, value: Any, reason: str = None):
         pass
 
     def close(self):
@@ -269,10 +269,11 @@ class DeviceManager(DeviceRegistry, FileSystemEventHandler):
             [device.close() for device in self.__device_map.values()]
 
     def __reload_config_loop(self):
-        sleep(20)
+        sleep(80)
         while self.__is_running:
             try:
                 self.__reload_config()
             except Exception as e:
                 logging.warning("error occurred reloading config " + str(e))
-            sleep(13*60*60)
+            sleep(60*60)
+
