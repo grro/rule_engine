@@ -233,29 +233,17 @@ class DeviceManager(DeviceRegistry, FileSystemEventHandler):
         if event.src_path.endswith(self.FILENAME):
             self.__reload_config()
 
-    def __set_device_map(self, new_device_map: Dict[str, Device]):
-        old_device_map = self.__device_map
-        self.__device_map = new_device_map
-        added = [new_devices for new_devices in new_device_map.values() if new_devices not in old_device_map.values()]
-        if len(added) > 0:
-            logging.info("new devices: " + ", " .join(sorted([device.name for device in added])))
-        removed = [removed_devices for removed_devices in old_device_map.values() if removed_devices not in new_device_map.values()]
-        if len(removed) > 0:
-            logging.info("removed devices: " + ", " .join(sorted([device.name for device in removed])))
-        [device.close() for device in old_device_map.values()]
-
     def __reload_config(self):
         if self.__is_running:
             try:
-                new_device_map = {}
                 webthing_file = join(self.dir, self.FILENAME)
                 logging.info("reading " + webthing_file)
                 with open(webthing_file) as file:
                     for device_name, config in yaml.safe_load(file).items():
                         for device in Webthing.create(device_name, config['url']):
-                            device.start()
-                            new_device_map[device.name] = device
-                self.__set_device_map(new_device_map)
+                            if device.name not in self.__device_map.keys():
+                                device.start()
+                                self.__device_map[device.name] = device
                 logging.info("devices available: " + ", ".join(sorted([device.name for device in self.devices])))
             except Exception as e:
                 logging.warning("error occurred refreshing config " + str(e))
