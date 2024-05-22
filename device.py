@@ -4,9 +4,11 @@ import json
 from os.path import join
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
+from dateutil import tz
 import yaml
 from abc import ABC, abstractmethod
 from requests import Session
+from datetime import datetime
 from threading import Thread
 from time import sleep
 from websocket_consumer import EventConsumer, Listener
@@ -33,8 +35,23 @@ class Device(ABC):
     def property_names(self) -> List[str]:
         return list(self._properties.keys())
 
-    def get_property(self, name: str):
-        return self._properties.get(name, None)
+    def get_property(self, prop_name: str, dflt = None, force_loading: bool = False) -> Any:
+        return self._properties.get(prop_name, dflt)
+
+    def get_property_as_datetime(self, prop_name: str, dflt: datetime = None, force_loading: bool = False) -> datetime:
+        dt = self.get_property(prop_name, dflt, force_loading)
+        return datetime.strptime(dt, "%Y-%m-%dT%H:%M")
+
+    def get_property_as_local_datetime(self, prop_name: str, dflt: datetime = None, force_loading: bool = False) -> datetime:
+        dt = self.get_property_as_datetime(prop_name, dflt, force_loading)
+        return self.__utc_to_local_time(dt)
+
+    def __utc_to_local_time(self, utc: datetime) -> datetime:
+        from_zone = tz.tzutc()
+        to_zone = tz.tzlocal()
+        utc = utc.replace(tzinfo=from_zone)
+        return utc.astimezone(to_zone)
+
 
     @abstractmethod
     def set_property(self, name: str, value: Any):
