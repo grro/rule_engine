@@ -55,6 +55,7 @@ class EventConsumer:
             logging.warning(self.name + " error occurred parsing message " + message + " " + str(e))
 
     def __listen(self):
+        errors = 0
         while self.__is_running:
             ws = None
             try:
@@ -63,11 +64,21 @@ class EventConsumer:
                 while self.__is_running:
                     msg = ws.recv()
                     self.on_message(msg)
+                    errors = 0
             except Exception as e:
+                errors = errors + 1
                 if self.__is_running:
                     logging.warning(self.name + " error occurred running websocket client (" + self.__uri + ") " + str(e))
             try:
                 ws.close()
             except Exception as e:
                 pass
-            sleep(7)
+
+            if errors <= 5:
+                sleep(3)
+            elif errors <= 5:
+                sleep(15)
+            elif errors <= 50:
+                sleep(60)
+            else:
+                sleep(10 * 60)
