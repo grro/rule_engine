@@ -8,7 +8,7 @@ from dateutil import tz
 import yaml
 from abc import ABC, abstractmethod
 from requests import Session
-from datetime import datetime
+from datetime import datetime, timedelta
 from threading import Thread
 from time import sleep
 from websocket_consumer import EventConsumer, Listener
@@ -211,12 +211,12 @@ class DeviceManager(DeviceRegistry, FileSystemEventHandler):
         self.__change_listener = change_listener
         self.__device_map = {}
         self.observer = Observer()
+        self.__last_time_reloaded = datetime.now() - timedelta(days=300)
 
     def start(self):
         self.observer.schedule(self, self.dir, recursive=False)
         self.observer.start()
         self.__reload_config()
-        Thread(target=self.__reload_config_loop, daemon=True).start()
 
     def close(self):
         self.__is_running = False
@@ -230,6 +230,10 @@ class DeviceManager(DeviceRegistry, FileSystemEventHandler):
 
     def device(self, name: str) -> Optional[Device]:
         device = self.__device_map.get(name, None)
+        if device is None:
+            if datetime.now() > (self.__last_time_reloaded + timedelta(minutes=10)):
+                self.__reload_config()
+                device = self.__device_map.get(name, None)
         if device is None:
             logging.warning("device " + name + " not available. Returning None (available devices: " + ", " .join([device.name for device in self.devices]) + ")")
         return device
@@ -252,6 +256,7 @@ class DeviceManager(DeviceRegistry, FileSystemEventHandler):
 
     def __reload_config(self):
         if self.__is_running:
+            self.__last_time_reloaded = datetime.now()
             try:
                 webthing_file = join(self.dir, self.FILENAME)
                 logging.info("reading " + webthing_file)
@@ -267,13 +272,4 @@ class DeviceManager(DeviceRegistry, FileSystemEventHandler):
             self.__change_listener()
         else:
             [device.close() for device in self.__device_map.values()]
-
-    def __reload_config_loop(self):
-        sleep(80)
-        while self.__is_running:
-            try:
-                self.__reload_config()
-            except Exception as e:
-                logging.warning("error occurred reloading config " + str(e))
-            sleep(60*60)
 
