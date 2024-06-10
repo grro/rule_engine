@@ -221,7 +221,8 @@ class DeviceManager(DeviceRegistry, FileSystemEventHandler):
     def device(self, name: str) -> Optional[Device]:
         device = self.__device_map.get(name, None)
         if device is None:
-            if datetime.now() > (self.__last_time_reloaded + timedelta(minutes=5)):
+            if datetime.now() > (self.__last_time_reloaded + timedelta(minutes=1)):
+                logging.warning("device " + name + " not available. Reloading config")
                 self.__reload_config()
                 device = self.__device_map.get(name, None)
         if device is None:
