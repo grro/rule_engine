@@ -47,7 +47,9 @@ class StoreThing(Thing):
         self.ioloop.add_callback(lambda: self._on_value_changed(name))
 
     def _on_value_changed(self, name):
-        self.__props.get(name).notify_of_external_update(self.store.get_property(name))
+        val = self.__props.get(name, None)
+        if val is not None:
+            val.notify_of_external_update(self.store.get_property(name))
 
 def run_webthing_server(description: str, port: int, store: Store):
     server = WebThingServer(SingleThing(StoreThing(description, store)), port=port, disable_host_validation=True)
