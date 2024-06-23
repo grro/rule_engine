@@ -1,10 +1,11 @@
 import logging
 import requests
 import json
+import yaml
 from os.path import join
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
-import yaml
+from redzoo.database.simple import SimpleDB
 from abc import ABC, abstractmethod
 from requests import Session
 from datetime import datetime, timedelta
@@ -45,6 +46,9 @@ class Device(ABC):
 
     @abstractmethod
     def set_property(self, name: str, value: Any, reason: str = None):
+        pass
+
+    def start(self):
         pass
 
     def close(self):
@@ -179,6 +183,29 @@ class Webthing(Device, Listener):
         return self.name + " (" + self.uri + ")"
 
 
+class Store(Device):
+
+    def __init__(self, name: str = "rule_db"):
+        super().__init__("db")
+        self.__db = SimpleDB(name)
+
+    def get_property(self, prop_name: str, dlt = None, force_loading: bool = False):
+        return self.__db.get(prop_name, default_value=dlt)
+
+    def set_property(self, prop_name: str, value: Any, reason: str = None):
+        self.__db.put(prop_name, value)
+        logging.info("update:" + prop_name + "=" + str(value) + ("" if reason is None else " (" + reason + ")"))
+
+    def __hash__(self):
+        return hash(self.name)
+
+    def __eq__(self, other):
+        return self.name == other.name
+
+    def __str__(self):
+        return self.name
+
+
 
 class DeviceRegistry(ABC):
 
@@ -199,7 +226,8 @@ class DeviceManager(DeviceRegistry, FileSystemEventHandler):
         self.__is_running = True
         self.dir =  dir
         self.__change_listener = change_listener
-        self.__device_map = {}
+        self.__db_device = Store()
+        self.__device_map = { self.__db_device.name: self.__db_device }
         self.observer = Observer()
         self.__last_time_reloaded = datetime.now() - timedelta(days=300)
 
