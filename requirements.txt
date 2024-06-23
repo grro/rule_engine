@@ -1,5 +1,6 @@
 requests>=2.31.0
 redzoo>=0.3.6
+webthing>=0.15.0
 websocket-client>=1.8.0
 PyYAML>=6.0.1
 pycron>=3.0.0

@@ -1,14 +1,15 @@
 import logging
 import sys
 import importlib
-from time import sleep
-from device import DeviceManager
+from typing import List, Optional
+from device import DeviceManager, Device
 from rule_loader import RuleLoader
 from source_scanner import parse_function_annotations
 from loaded_rule_processor import RuleLoadedProcessor
 from cron_processor import CronProcessor
 from property_change_processor import PropertyChangeProcessor
 from invoke import InvokerManager
+from db_webthing import run_webthing_server
 
 
 
@@ -34,19 +35,15 @@ class RuleEngine():
         self.__device_manager.close()
 
     def start(self):
-        if not self.__is_running:
-            logging.info("starting rule engine...")
-            self.__is_running = True
-            if self.__directory not in sys.path:
-                sys.path.insert(0, self.__directory )
-            self.__invocation_manager.start()
-            self.__device_manager.start()
-            [processor.start() for processor in self.__processors]
-            self.__rule_loader.start()
-            logging.info("rule engine started")
-
-            while self.__is_running:
-                sleep(1)
+        logging.info("starting rule engine...")
+        self.__is_running = True
+        if self.__directory not in sys.path:
+            sys.path.insert(0, self.__directory )
+        self.__invocation_manager.start()
+        self.__device_manager.start()
+        [processor.start() for processor in self.__processors]
+        self.__rule_loader.start()
+        logging.info("rule engine started")
 
     def __load_module(self, filename: str):
         if filename.endswith(".py"):
@@ -84,13 +81,22 @@ class RuleEngine():
     def __filename_to_modulename(self, filename):
         return filename[:-3]
 
+    @property
+    def devices(self) -> List[Device]:
+        return self.__device_manager.devices
+
+    def device(self, name: str) -> Optional[Device]:
+        return self.__device_manager.device(name)
 
 
-def run_server(directory: str):
+
+def run_server(directory: str, port: int):
     rule_engine = RuleEngine(directory)
     try:
         logging.info('starting rule engine (rules dir: ' + directory + ')')
         rule_engine.start()
+        run_webthing_server("", port,  rule_engine.device("db"))
+
     except KeyboardInterrupt:
         logging.info('stopping rule engine')
         rule_engine.stop()
@@ -100,4 +106,4 @@ def run_server(directory: str):
 if __name__ == '__main__':
     logging.basicConfig(format='%(asctime)s %(name)-20s: %(levelname)-8s %(message)s', level=logging.INFO, datefmt='%Y-%m-%d %H:%M:%S')
     logging.getLogger('urllib3.connectionpool').setLevel(logging.WARNING)
-    run_server(sys.argv[1])
+    run_server(sys.argv[1], int(sys.argv[2]))

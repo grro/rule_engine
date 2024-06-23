@@ -187,7 +187,14 @@ class Store(Device):
 
     def __init__(self, name: str = "rule_db"):
         super().__init__("db")
+        self.__listener =  lambda: None
         self.__db = SimpleDB(name)
+
+    def set_listener(self, listener):
+        self.__listener = listener
+
+    def property_names(self) -> List[str]:
+        return  self.__db.keys()
 
     def get_property(self, prop_name: str, dlt = None, force_loading: bool = False):
         return self.__db.get(prop_name, default_value=dlt)
@@ -195,6 +202,7 @@ class Store(Device):
     def set_property(self, prop_name: str, value: Any, reason: str = None):
         self.__db.put(prop_name, value)
         logging.info("update:" + prop_name + "=" + str(value) + ("" if reason is None else " (" + reason + ")"))
+        self.__listener(prop_name)
 
     def __hash__(self):
         return hash(self.name)
