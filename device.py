@@ -185,10 +185,10 @@ class Webthing(Device, Listener):
 
 class Store(Device):
 
-    def __init__(self, name: str = "rule_db"):
+    def __init__(self, directory: str, name: str = "rule_db"):
         super().__init__("db")
         self.__listener =  lambda: None
-        self.__db = SimpleDB(name)
+        self.__db = SimpleDB(name, directory=directory)
 
     def set_listener(self, listener):
         self.__listener = listener
@@ -234,7 +234,7 @@ class DeviceManager(DeviceRegistry, FileSystemEventHandler):
         self.__is_running = True
         self.dir =  dir
         self.__change_listener = change_listener
-        self.__db_device = Store()
+        self.__db_device = Store(dir)
         self.__device_map = { self.__db_device.name: self.__db_device }
         self.observer = Observer()
         self.__last_time_reloaded = datetime.now() - timedelta(days=300)

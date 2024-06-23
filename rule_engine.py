@@ -95,7 +95,7 @@ def run_server(directory: str, port: int):
     try:
         logging.info('starting rule engine (rules dir: ' + directory + ')')
         rule_engine.start()
-        run_webthing_server("", port,  rule_engine.device("db"))
+        run_webthing_server("", directory, port,  rule_engine.device("db"))
 
     except KeyboardInterrupt:
         logging.info('stopping rule engine')
