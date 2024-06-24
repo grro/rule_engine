@@ -74,11 +74,9 @@ class EventConsumer:
             except Exception as e:
                 pass
 
-            if errors <= 5:
+            if errors < 3:
                 sleep(3)
-            elif errors <= 5:
-                sleep(15)
-            elif errors <= 50:
-                sleep(60)
+            elif errors < 5:
+                sleep(30)
             else:
-                sleep(10 * 60)
+                sleep(5*60)

@@ -1,15 +1,17 @@
 import logging
 import sys
 import importlib
-from typing import List, Optional
 from device import DeviceManager, Device
 from rule_loader import RuleLoader
 from source_scanner import parse_function_annotations
 from loaded_rule_processor import RuleLoadedProcessor
 from cron_processor import CronProcessor
+from device import Store
 from property_change_processor import PropertyChangeProcessor
 from invoke import InvokerManager
-from db_webthing import run_webthing_server
+from webthing import (MultipleThings, WebThingServer)
+from db_webthing import StoreThing
+from rule_webthing import RuleThing
 
 
 
@@ -21,10 +23,11 @@ class RuleEngine():
         self.__directory = directory
         self.__invocation_manager = InvokerManager()
         self.__rule_loader = RuleLoader(self.__load_module, self.__unload_module, directory)
-        self.__device_manager = DeviceManager(directory, self.__rule_loader.reload)
-        self.__processors = [RuleLoadedProcessor(self.__device_manager, self.__invocation_manager),
-                             CronProcessor(self.__device_manager, self.__invocation_manager),
-                             PropertyChangeProcessor(self.__device_manager, self.__invocation_manager)]
+        self._device_manager = DeviceManager(directory)
+        self._device_manager.add_change_listener(self.__rule_loader.reload)
+        self.__processors = [RuleLoadedProcessor(self._device_manager, self.__invocation_manager),
+                             CronProcessor(self._device_manager, self.__invocation_manager),
+                             PropertyChangeProcessor(self._device_manager, self.__invocation_manager)]
 
     def set_listener(self, listener):
         self.__listener = listener
@@ -32,7 +35,7 @@ class RuleEngine():
     def stop(self):
         self.__is_running = False
         self.__rule_loader.close()
-        self.__device_manager.close()
+        self._device_manager.close()
 
     def start(self):
         logging.info("starting rule engine...")
@@ -40,7 +43,7 @@ class RuleEngine():
         if self.__directory not in sys.path:
             sys.path.insert(0, self.__directory )
         self.__invocation_manager.start()
-        self.__device_manager.start()
+        self._device_manager.start()
         [processor.start() for processor in self.__processors]
         self.__rule_loader.start()
         logging.info("rule engine started")
@@ -81,12 +84,17 @@ class RuleEngine():
     def __filename_to_modulename(self, filename):
         return filename[:-3]
 
-    @property
-    def devices(self) -> List[Device]:
-        return self.__device_manager.devices
 
-    def device(self, name: str) -> Optional[Device]:
-        return self.__device_manager.device(name)
+
+def run_webthing_server(description: str, port: int, device_manager: DeviceManager):
+    server = WebThingServer(MultipleThings([RuleThing(description, device_manager), StoreThing(description, device_manager.device(Store.NAME))], "engine"), port=port, disable_host_validation=True)
+    try:
+        logging.info('starting the server http://localhost:' + str(port))
+        server.start()
+    except KeyboardInterrupt:
+        logging.info('stopping the server')
+        server.stop()
+        logging.info('done')
 
 
 
@@ -95,7 +103,7 @@ def run_server(directory: str, port: int):
     try:
         logging.info('starting rule engine (rules dir: ' + directory + ')')
         rule_engine.start()
-        run_webthing_server("", port,  rule_engine.device("db"))
+        run_webthing_server("", port,  rule_engine._device_manager)
 
     except KeyboardInterrupt:
         logging.info('stopping rule engine')

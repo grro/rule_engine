@@ -1,7 +1,7 @@
-import logging
 import tornado.ioloop
 from webthing import (SingleThing, Property, Thing, Value, WebThingServer)
-from device import Store
+from device import Store, DeviceManager
+
 
 
 
@@ -25,7 +25,7 @@ class StoreThing(Thing):
 
         self.__props = {}
 
-        for name in store.property_names():
+        for name in self.store.property_names:
             val = store.get_property(name)
             prop = Value(val, lambda value: self.store.set_property(name, value))
             dt = "sting"
@@ -50,16 +50,6 @@ class StoreThing(Thing):
         val = self.__props.get(name, None)
         if val is not None:
             val.notify_of_external_update(self.store.get_property(name))
-
-def run_webthing_server(description: str, port: int, store: Store):
-    server = WebThingServer(SingleThing(StoreThing(description, store)), port=port, disable_host_validation=True)
-    try:
-        logging.info('starting the server http://localhost:' + str(port))
-        server.start()
-    except KeyboardInterrupt:
-        logging.info('stopping the server')
-        server.stop()
-        logging.info('done')
 
 
 

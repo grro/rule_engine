@@ -185,14 +185,17 @@ class Webthing(Device, Listener):
 
 class Store(Device):
 
+    NAME = "db"
+
     def __init__(self, directory: str, name: str = "rule_db"):
-        super().__init__("db")
+        super().__init__(self.NAME)
         self.__listener =  lambda: None
         self.__db = SimpleDB(name, directory=directory)
 
     def set_listener(self, listener):
         self.__listener = listener
 
+    @property
     def property_names(self) -> List[str]:
         return  self.__db.keys()
 
@@ -230,14 +233,17 @@ class DeviceManager(DeviceRegistry, FileSystemEventHandler):
 
     FILENAME = "webthings.yml"
 
-    def __init__(self, dir: str, change_listener):
+    def __init__(self, dir: str):
         self.__is_running = True
         self.dir =  dir
-        self.__change_listener = change_listener
+        self.__change_listeners = set()
         self.__db_device = Store(dir)
         self.__device_map = { self.__db_device.name: self.__db_device }
         self.observer = Observer()
         self.__last_time_reloaded = datetime.now() - timedelta(days=300)
+
+    def add_change_listener(self, change_listener):
+        self.__change_listeners.add(change_listener)
 
     def start(self):
         self.observer.schedule(self, self.dir, recursive=False)
@@ -296,7 +302,7 @@ class DeviceManager(DeviceRegistry, FileSystemEventHandler):
                 logging.info("devices available: " + ", ".join(sorted([device.name for device in self.devices])))
             except Exception as e:
                 logging.warning("error occurred refreshing config " + str(e))
-            self.__change_listener()
+            [change_listener() for change_listener in self.__change_listeners]
         else:
             [device.close() for device in self.__device_map.values()]
 
