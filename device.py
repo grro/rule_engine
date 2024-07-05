@@ -287,6 +287,12 @@ class DeviceManager(DeviceRegistry, FileSystemEventHandler):
         if event.src_path.endswith(self.FILENAME):
             self.__reload_config()
 
+    def __notify_listeners(self):
+        try:
+            [change_listener() for change_listener in self.__change_listeners]
+        except Exception as e:
+            logging.warning("error occurred notifying listeners " + str(e))
+
     def __reload_config(self):
         if self.__is_running:
             self.__last_time_reloaded = datetime.now()
@@ -302,7 +308,7 @@ class DeviceManager(DeviceRegistry, FileSystemEventHandler):
                 logging.info("devices available: " + ", ".join(sorted([device.name for device in self.devices])))
             except Exception as e:
                 logging.warning("error occurred refreshing config " + str(e))
-            [change_listener() for change_listener in self.__change_listeners]
+            self.__notify_listeners()
         else:
             [device.close() for device in self.__device_map.values()]
 

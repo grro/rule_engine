@@ -1,6 +1,5 @@
-import logging
 import tornado.ioloop
-from webthing import (SingleThing, Property, Thing, Value, WebThingServer)
+from webthing import (Property, Thing, Value)
 from device import DeviceManager
 
 
@@ -39,8 +38,8 @@ class RuleThing(Thing):
     def __devicenames(self) -> str:
         return ", ".join(sorted([device.name for device in self.device_manager.devices]))
 
-    def on_value_changed(self, name: str):
-        self.ioloop.add_callback(lambda: self._on_value_changed(name))
+    def on_value_changed(self):
+        self.ioloop.add_callback(self._on_value_changed)
 
-    def _on_value_changed(self, name):
+    def _on_value_changed(self):
         self.devices.notify_of_external_update(self.__devicenames)
