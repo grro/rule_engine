@@ -4,7 +4,7 @@ import json
 import yaml
 from os.path import join
 from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler
+from watchdog.events import FileSystemEventHandler, FileSystemEvent
 from redzoo.database.simple import SimpleDB
 from abc import ABC, abstractmethod
 from requests import Session
@@ -263,15 +263,19 @@ class DeviceManager(DeviceRegistry, FileSystemEventHandler):
     def device(self, name: str) -> Optional[Device]:
         device = self.__device_map.get(name, None)
         if device is None:
-            if datetime.now() > (self.__last_time_reloaded + timedelta(seconds=15)):
+            elapsed_sec = (datetime.now() - self.__last_time_reloaded).total_seconds()
+            if elapsed_sec > 30:
                 logging.warning("device " + name + " not available. Reloading config")
                 self.__reload_config()
                 device = self.__device_map.get(name, None)
             else:
-                logging.warning("device " + name + " not available. Suppress reloading config (was tried recently")
+                logging.warning("device " + name + " not available. Suppress reloading config (was tried " + str(elapsed_sec) + " sec ago")
         if device is None:
             logging.warning("device " + name + " not available. Returning None (available devices: " + ", " .join([device.name for device in self.devices]) + ")")
         return device
+
+    def dispatch(self, event: FileSystemEvent) -> None:
+        super().dispatch(event)
 
     def on_moved(self, event):
         if event.dest_path.endswith(self.FILENAME):
