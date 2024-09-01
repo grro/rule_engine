@@ -1,7 +1,7 @@
 import logging
 import sys
 import importlib
-from device import DeviceManager, Device
+from device import DeviceManager
 from rule_loader import RuleLoader
 from source_scanner import parse_function_annotations
 from loaded_rule_processor import RuleLoadedProcessor
