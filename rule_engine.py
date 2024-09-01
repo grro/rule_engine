@@ -42,7 +42,9 @@ class RuleEngine():
         self.__is_running = True
         if self.__directory not in sys.path:
             sys.path.insert(0, self.__directory )
+        logging.info("starting invocation manager")
         self.__invocation_manager.start()
+        logging.info("starting device_manager")
         self._device_manager.start()
         [processor.start() for processor in self.__processors]
         self.__rule_loader.start()
@@ -96,14 +98,12 @@ def run_webthing_server(description: str, port: int, device_manager: DeviceManag
         server.stop()
         logging.info('done')
 
-
-
 def run_server(directory: str, port: int):
     rule_engine = RuleEngine(directory)
     try:
         logging.info('starting rule engine (rules dir: ' + directory + ')')
         rule_engine.start()
-        run_webthing_server("", port,  rule_engine._device_manager)
+        run_webthing_server("", port, rule_engine._device_manager)
 
     except KeyboardInterrupt:
         logging.info('stopping rule engine')

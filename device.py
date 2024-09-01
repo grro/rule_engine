@@ -90,10 +90,6 @@ class Webthing(Device, Listener):
     def start(self):
         if not self.__is_running:
             self.__is_running = True
-            try:
-                self.__load_all_properties()
-            except Exception as e:
-                logging.warning(self.name + " error occurred loading properties " + str(e))
             Thread(target=self.__load_all_properties_loop, daemon=True).start()
             logging.info("device " + self.name + " started")
 
