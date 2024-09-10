@@ -254,7 +254,7 @@ class DeviceManager(DeviceRegistry, FileSystemEventHandler):
         self.__is_running = True
         self.dir =  dir
         self.__change_listeners = set()
-        self.__db_device = Store(dir)
+        self.__db_device = Store(join(dir, 'data'))
         self.__device_map = { self.__db_device.name: self.__db_device }
         self.observer = Observer()
         self.__last_time_reloaded = datetime.now() - timedelta(days=300)
