@@ -70,6 +70,7 @@ class Webthing(Device, Listener):
         self.uri = uri
         self.__session = Session()
         self.__is_running = False
+        self.__properties_load_time = dict()
         self.event_consumer = EventConsumer(name, self.uri, self).start()
 
     @staticmethod
@@ -112,7 +113,18 @@ class Webthing(Device, Listener):
 
     def get_property(self, prop_name: str, dlt = None, force_loading: bool = False):
         value = super().get_property(prop_name)
-        if force_loading or (value is None):
+
+        if force_loading:
+            loading = "force loading"
+        elif value is None:
+            loading = "local prop value is null"
+        elif self.__property_age_sec(prop_name) > 180:
+            loading = "local prop age is > 180 sec"
+        else:
+            loading = None
+
+        if loading is not None:
+            logging.debug("loading " + prop_name + ". Reason: " + loading)
             property_uri = self.uri + "/properties/" + prop_name
             try:
                 resp = self.__session.get(property_uri, timeout=10)
@@ -121,6 +133,7 @@ class Webthing(Device, Listener):
                 if value is None:
                     logging.warning("calling " + property_uri + " returns " + json.dumps(data, indent=2))
                 self._properties[prop_name] = value
+                self.__properties_load_time[prop_name] = datetime.now()
                 self._notify_listener({prop_name: value})
             except Exception as e:
                 logging.warning(self.name + " error occurred calling " + property_uri + " " + str(e))
@@ -129,6 +142,10 @@ class Webthing(Device, Listener):
             return dlt
         else:
             return value
+
+    def __property_age_sec(self ,prop_name: str) -> int:
+        load_time = self.__properties_load_time.get(prop_name, datetime(year=2000, month=1, day=1))
+        return int((datetime.now() - load_time).total_seconds())
 
     def set_property(self, prop_name: str, value: Any, reason: str = None):
         if self.get_property(prop_name, force_loading=True) != value:
@@ -264,12 +281,13 @@ class DeviceManager(DeviceRegistry, FileSystemEventHandler):
         device = self.__device_map.get(name, None)
         if device is None:
             elapsed_sec = (datetime.now() - self.__last_time_reloaded).total_seconds()
-            if elapsed_sec > 30:
+            max_frequency = 30
+            if elapsed_sec > max_frequency:
                 logging.warning("device " + name + " not available. Reloading config")
                 self.__reload_config()
                 device = self.__device_map.get(name, None)
             else:
-                logging.warning("device " + name + " not available. Suppress reloading config (was tried " + str(elapsed_sec) + " sec ago")
+                logging.warning("device " + name + " not available. Suppress reloading config (was tried " + str(int(elapsed_sec)) + " sec ago; min wait time: " + str(max_frequency) + " sec)")
         if device is None:
             logging.warning("device " + name + " not available. Returning None (available devices: " + ", " .join([device.name for device in self.devices]) + ")")
         return device

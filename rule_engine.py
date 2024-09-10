@@ -1,6 +1,7 @@
 import logging
 import sys
 import importlib
+from time import sleep
 from device import DeviceManager
 from rule_loader import RuleLoader
 from source_scanner import parse_function_annotations
@@ -103,7 +104,8 @@ def run_server(directory: str, port: int):
     try:
         logging.info('starting rule engine (rules dir: ' + directory + ')')
         rule_engine.start()
-        run_webthing_server("", port, rule_engine._device_manager)
+        #run_webthing_server("", port, rule_engine._device_manager)
+        sleep(444444)
 
     except KeyboardInterrupt:
         logging.info('stopping rule engine')
