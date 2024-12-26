@@ -58,7 +58,7 @@ class Device(ABC):
         return self.name
 
     def __repr__(self):
-        return self.__str__()
+        return self.__str__() + "  " + ", ".join(self.property_names)
 
 
 class Webthing(Device, Listener):
