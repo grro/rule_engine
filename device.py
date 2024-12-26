@@ -197,7 +197,7 @@ class Webthing(Device, Listener):
         return self.name == other.name and self.uri == other.uri
 
     def __str__(self):
-        return self.name + " (" + self.uri + ")"
+        return self.name + " (" + self.uri + ") " + ", ".join(self.property_names)
 
 
 class Store(Device):
