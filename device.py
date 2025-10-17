@@ -157,7 +157,7 @@ class Webthing(Device, Listener):
                     self._properties[prop_name] = value
                     logging.info(self.name + " (" + self.uri + ") updated: " + prop_name + "=" + str(value) + ("" if reason is None else " (" + reason + ")"))
                 else:
-                    logging.info(self.name + " calling " + self.uri + " to update " + prop_name + " with " + str(value) + " failed. Got " + str(resp.status_code) + " " + resp.text)
+                    logging.info(self.name + " calling PUT " + property_uri + " to update " + prop_name + " with " + data + " failed. Got " + str(resp.status_code) + " " + resp.text)
                 self._notify_listener({prop_name: value})
             except Exception as e:
                 logging.warning(self.name + " error occurred calling " + property_uri + " " + str(e))
