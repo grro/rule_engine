@@ -1,7 +1,6 @@
 import logging
 import sys
 import importlib
-from time import sleep
 from device import DeviceManager
 from rule_loader import RuleLoader
 from source_scanner import parse_function_annotations
@@ -12,11 +11,13 @@ from property_change_processor import PropertyChangeProcessor
 from invoke import InvokerManager
 from webthing import (MultipleThings, WebThingServer)
 from db_webthing import StoreThing
+from db_mcp import StoreMCPServer
+from db_web import StoreWebServer
 from rule_webthing import RuleThing
 
 
 
-class RuleEngine():
+class RuleEngine:
 
     def __init__(self, directory: str):
         self.__is_running = False
@@ -88,28 +89,25 @@ class RuleEngine():
         return filename[:-3]
 
 
-
-def run_webthing_server(description: str, port: int, device_manager: DeviceManager):
-    server = WebThingServer(MultipleThings([RuleThing(description, device_manager), StoreThing(description, device_manager.device(Store.NAME))], "engine"), port=port, disable_host_validation=True)
-    try:
-        logging.info('starting the server http://localhost:' + str(port))
-        server.start()
-    except KeyboardInterrupt:
-        logging.info('stopping the server')
-        server.stop()
-        logging.info('done')
-
 def run_server(directory: str, port: int):
     rule_engine = RuleEngine(directory)
+    server = WebThingServer(MultipleThings([RuleThing("", rule_engine._device_manager), StoreThing("", rule_engine._device_manager.device(Store.NAME))], "engine"), port=port, disable_host_validation=True)
+    web_server = StoreWebServer(rule_engine._device_manager.device(Store.NAME), port=port+1)
+    mcp_server = StoreMCPServer("Db", port=port+2, store=rule_engine._device_manager.device(Store.NAME))
     try:
         logging.info('starting rule engine (rules dir: ' + directory + ')')
         rule_engine.start()
-        run_webthing_server("", port, rule_engine._device_manager)
-
+        web_server.start()
+        mcp_server.start()
+        logging.info('starting the server http://localhost:' + str(port))
+        server.start()
     except KeyboardInterrupt:
         logging.info('stopping rule engine')
         rule_engine.stop()
-        logging.info('done')
+        web_server.stop()
+        mcp_server.stop()
+        logging.info('stopping the server')
+        server.stop()
 
 
 if __name__ == '__main__':

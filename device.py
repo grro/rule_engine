@@ -265,7 +265,7 @@ class DeviceManager(DeviceRegistry, FileSystemEventHandler):
     def start(self):
         self.observer.schedule(self, self.dir, recursive=False)
         self.observer.start()
-        self.__reload_config()
+        Thread(target=self.__reload_config, daemon=True).start()
 
     def close(self):
         self.__is_running = False
