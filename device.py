@@ -40,7 +40,10 @@ class Device(ABC):
 
     def get_property_as_datetime(self, prop_name: str, dflt: datetime = None, timezone_offset: int = 0, force_loading: bool = False) -> datetime:
         dt_string = self.get_property(prop_name, dflt, force_loading)
-        dt = datetime.strptime(dt_string, "%Y-%m-%dT%H:%M")
+        try:
+            dt = datetime.strptime(dt_string, "%Y-%m-%dT%H:%M")
+        except Exception as e:
+            dt = datetime.strptime(dt_string, "%Y-%m-%dT%H:%M:%S")
         dt = dt + timedelta(hours=timezone_offset)
         return dt
 
