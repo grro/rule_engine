@@ -78,9 +78,8 @@ class Webthing(Device, Listener):
 
     @staticmethod
     def create(name: str, uri: str) -> List:
-        logging.info("creating device " + name + " with uri " + uri)
         try:
-            resp = requests.get(uri)
+            resp = requests.get(uri, timeout=10)
             resp.raise_for_status()
             data = resp.json()
             if type(data) is list:
@@ -88,7 +87,7 @@ class Webthing(Device, Listener):
             else:
                 return [Webthing(name, uri)]
         except Exception as e:
-            logging.warning(name + " error occurred calling " + uri + " " + str(e))
+            logging.warning("creating " + name + " failed. error occurred calling " + uri + " " + str(e))
             return []
 
 
