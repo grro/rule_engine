@@ -51,8 +51,8 @@ class Device(ABC):
     def set_property(self, name: str, value: Any, reason: str = None):
         pass
 
-    def start(self):
-        pass
+    def start(self) -> bool:
+        return True
 
     def close(self):
         pass
@@ -78,20 +78,16 @@ class Webthing(Device, Listener):
 
     @staticmethod
     def create(name: str, uri: str) -> List:
-        try:
-            resp = requests.get(uri, timeout=10)
-            resp.raise_for_status()
-            data = resp.json()
-            if type(data) is list:
-                return [Webthing(config['title'], config['base']) for config in data]
-            else:
-                return [Webthing(name, uri)]
-        except Exception as e:
-            logging.warning("creating " + name + " failed. error occurred calling " + uri + " " + str(e))
-            return []
+        resp = requests.get(uri, timeout=10)
+        resp.raise_for_status()
+        data = resp.json()
+        if type(data) is list:
+            return [Webthing(config['title'], config['base']) for config in data]
+        else:
+            return [Webthing(name, uri)]
 
 
-    def start(self):
+    def start(self) -> bool:
         if not self.__is_running:
             self.__is_running = True
             try:
@@ -258,7 +254,7 @@ class DeviceManager(DeviceRegistry, FileSystemEventHandler):
         self.dir =  dir
         self.__change_listeners = set()
         self.__db_device = Store(join(dir, 'data'))
-        self.__device_map = { self.__db_device.name: self.__db_device }
+        self.__device_map : Dict[str, Webthing] = { self.__db_device.name: self.__db_device }
         self.observer = Observer()
         self.__last_time_reloaded = datetime.now() - timedelta(days=300)
 
@@ -324,15 +320,21 @@ class DeviceManager(DeviceRegistry, FileSystemEventHandler):
         if self.__is_running:
             self.__last_time_reloaded = datetime.now()
             try:
+                failed = dict
                 webthing_file = join(self.dir, self.FILENAME)
                 logging.info("reading " + webthing_file)
                 with open(webthing_file) as file:
                     for device_name, config in yaml.safe_load(file).items():
-                        devices : List[Webthing] = Webthing.create(device_name, config['url'])
-                        for device in devices:
-                            if device.name not in self.__device_map.keys():
-                                device.start()
-                                self.__device_map[device.name] = device
+                        try:
+                            uri = config['url']
+                            devices : List[Webthing] = Webthing.create(device_name, uri)
+                            for device in devices:
+                                if device.name not in self.__device_map.keys():
+                                    device.start()
+                                    self.__device_map[device.name] = device
+                        except Exception as e:
+                            logging.warning("creating " + device_name + " failed. error occurred calling " + uri + " " + str(e))
+
                 logging.info("devices available: " + ", ".join(sorted([device.name for device in self.devices])))
             except Exception as e:
                 logging.warning("error occurred refreshing config " + str(e))
