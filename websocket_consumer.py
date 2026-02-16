@@ -19,10 +19,10 @@ class Listener(ABC):
 
 class EventConsumer:
 
-    def __init__(self, name: str, uri: str, event_listener: Listener):
+    def __init__(self, device: str, uri: str, event_listener: Listener):
         self.__is_running = True
         self.__uri = uri
-        self.name = name
+        self.device = device
         self.__ws_uri = None
         self.__event_listener = event_listener
 
@@ -50,16 +50,16 @@ class EventConsumer:
             if data['messageType'] == 'propertyStatus':
                 self.__event_listener.on_property_changed(data['data'])
             else:
-                logging.warning(self.name + " unknown message type received " + message)
+                logging.warning("device " + self.device + " unknown message type received " + message)
         except Exception as e:
-            logging.warning(self.name + " error occurred parsing message " + message + " " + str(e))
+            logging.warning("device " + self.device + " error occurred parsing message " + message + " " + str(e))
 
     def __listen(self):
         errors = 0
         while self.__is_running:
             ws = None
             try:
-                logging.info(self.name + " opening stream " + self.ws_uri)
+                logging.info("device " + self.device + " opening stream " + self.ws_uri)
                 ws = create_connection(self.ws_uri)
                 while self.__is_running:
                     msg = ws.recv()
@@ -68,7 +68,7 @@ class EventConsumer:
             except Exception as e:
                 errors = errors + 1
                 if self.__is_running:
-                    logging.warning(self.name + " error occurred running websocket client (" + self.__uri + ") " + str(e))
+                    logging.warning("device " + self.device + " error occurred running websocket client (" + self.__uri + ") " + str(e))
             try:
                 ws.close()
             except Exception as e:

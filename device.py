@@ -78,6 +78,7 @@ class Webthing(Device, Listener):
 
     @staticmethod
     def create(name: str, uri: str) -> List:
+        logging.info("creating device " + name + " with uri " + uri)
         try:
             resp = requests.get(uri)
             resp.raise_for_status()
@@ -197,7 +198,7 @@ class Webthing(Device, Listener):
         return hash(self.name + self.uri)
 
     def __eq__(self, other):
-        return self.name == other.name and self.uri == other.uri
+        return self.name == other.device and self.uri == other.uri
 
     def __str__(self):
         return self.name + " (" + self.uri + ") " + ", ".join(self.property_names)
@@ -231,7 +232,7 @@ class Store(Device):
         return hash(self.name)
 
     def __eq__(self, other):
-        return self.name == other.name
+        return self.name == other.device
 
     def __str__(self):
         return self.name
@@ -328,7 +329,8 @@ class DeviceManager(DeviceRegistry, FileSystemEventHandler):
                 logging.info("reading " + webthing_file)
                 with open(webthing_file) as file:
                     for device_name, config in yaml.safe_load(file).items():
-                        for device in Webthing.create(device_name, config['url']):
+                        devices : List[Webthing] = Webthing.create(device_name, config['url'])
+                        for device in devices:
                             if device.name not in self.__device_map.keys():
                                 device.start()
                                 self.__device_map[device.name] = device
